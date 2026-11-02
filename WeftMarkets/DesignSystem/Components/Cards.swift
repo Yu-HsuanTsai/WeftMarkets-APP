@@ -56,6 +56,7 @@ struct NoteCard: View {
     let note: Note
     var kicker: String?
     @State private var showsExtraction = false
+    @State private var showsTranscript = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -86,11 +87,17 @@ struct NoteCard: View {
                     .background(WeftColor.highlightSoft)
             }
             if !note.tickers.isEmpty { TickerTagRow(tickers: note.tickers, limit: 4) }
-            Button("看這則怎麼萃取出來") { showsExtraction = true }
-                .font(.footnote)
-                .underline()
-                .foregroundStyle(WeftColor.accent)
-                .buttonStyle(.plain)
+            if showsTranscript {
+                TranscriptEvidenceView(episodeRef: episode.ref, noteID: note.id)
+            }
+            HStack(spacing: WeftSpacing.md) {
+                Button(showsTranscript ? "收合逐字稿" : "展開逐字稿片段") { showsTranscript.toggle() }
+                Button("看這則怎麼萃取出來") { showsExtraction = true }
+            }
+            .font(.footnote)
+            .underline()
+            .foregroundStyle(WeftColor.accent)
+            .buttonStyle(.plain)
         }
         .padding(WeftSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -30,32 +30,39 @@ struct HomeView: View {
                         }
                     }
 
-                    SectionHeader(title: "最新一集") {
-                        NavigationLink("全部集數", value: Route.show(summary.latestEpisode.showID))
-                    }
-                    if let note = summary.latestEpisode.notes.first {
-                        NavigationLink(value: Route.episode(summary.latestEpisode.id)) {
-                            NoteCard(episode: summary.latestEpisode, note: note,
-                                     kicker: "\(summary.latestEpisode.showName) · \(summary.latestEpisode.title) · 重點 1 / \(summary.latestEpisode.noteCount)")
+                    // Blocks whose data couldn't be read are hidden, not faked.
+                    if let latest = summary.latestEpisode, let note = latest.notes.first {
+                        SectionHeader(title: "最新一集") {
+                            NavigationLink("全部集數", value: Route.show(latest.showID))
+                        }
+                        NavigationLink(value: Route.episode(latest.ref)) {
+                            NoteCard(episode: latest, note: note,
+                                     kicker: "\(latest.showName) · \(latest.title) · 重點 1 / \(latest.noteCount)")
                         }
                         .buttonStyle(.plain)
                     }
 
-                    SectionHeader("最多集數提到的個股")
-                    VStack(spacing: 0) {
-                        ForEach(summary.topByEpisodes) { ranking in
-                            NavigationLink(value: Route.stock(ranking.stock.ticker)) {
-                                StockRow(ranking: ranking, metric: "\(ranking.episodeCount) 集", detail: "提到它的集數")
+                    if !summary.topByEpisodes.isEmpty {
+                        SectionHeader("近 7 天熱門個股")
+                        VStack(spacing: 0) {
+                            ForEach(summary.topByEpisodes) { ranking in
+                                NavigationLink(value: Route.stock(ranking.stock.ticker)) {
+                                    StockRow(ranking: ranking,
+                                             metric: ranking.noteCount.map { "\($0) 則" } ?? "\(ranking.episodeCount) 集",
+                                             detail: ranking.noteCount == nil ? "提到它的集數" : "\(ranking.episodeCount) 集")
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        Text("依近 7 天被整理成重點的則數排名，反映討論熱度，不是投資建議。")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(WeftColor.textSecondary)
                     }
-                    Text("排行只數「提到它的集數」，不數字詞出現次數。")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(WeftColor.textSecondary)
 
-                    SectionHeader("市場背景")
-                    ForEach(summary.markets) { MarketContextCard(context: $0) }
+                    if !summary.markets.isEmpty {
+                        SectionHeader("市場背景")
+                        ForEach(summary.markets) { MarketContextCard(context: $0) }
+                    }
 
                     Disclaimer()
                 }

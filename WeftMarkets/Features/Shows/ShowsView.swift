@@ -10,7 +10,7 @@ struct ShowsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WeftSpacing.md) {
-                LargeTitleHeader(title: "節目", kicker: "SHOW DIRECTORY · 最新 5 集")
+                LargeTitleHeader(title: "節目", kicker: "SHOW DIRECTORY · 最新集數")
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: WeftSpacing.xs) {
                         FilterChip(label: "全部", count: "最新", isSelected: selectedShowID == nil) { selectedShowID = nil }
@@ -34,13 +34,13 @@ struct ShowsView: View {
                     } else {
                         LazyVStack(spacing: 0) {
                             ForEach(episodes) { episode in
-                                NavigationLink(value: Route.episode(episode.id)) {
-                                    EpisodeCard(episode: episode, isRead: watchlist.isRead(episode.id))
+                                NavigationLink(value: Route.episode(episode.ref)) {
+                                    EpisodeCard(episode: episode, showsThisWeekBadge: episode.isWithinLast7Days, isRead: watchlist.isRead(episode.ref))
                                 }
                                 .buttonStyle(.plain)
                                 .contextMenu {
-                                    Button(watchlist.isRead(episode.id) ? "標為未讀" : "標為已讀", systemImage: "checkmark") {
-                                        watchlist.toggleRead(episode.id)
+                                    Button(watchlist.isRead(episode.ref) ? "標為未讀" : "標為已讀", systemImage: "checkmark") {
+                                        watchlist.toggleRead(episode.ref)
                                     }
                                 }
                             }
@@ -66,15 +66,15 @@ struct ShowDetailView: View {
     let showID: String
     @Environment(\.repository) private var repository
     @Environment(WatchlistStore.self) private var watchlist
+    @State private var showName: String?
 
-    private var show: Show? { MockData.shows.first { $0.id == showID } }
 
     var body: some View {
         AsyncContent(loadingTitle: "正在載入最近集數…", load: { try await repository.latestEpisodes(showID: showID) }) { episodes in
             ScrollView {
                 VStack(alignment: .leading, spacing: WeftSpacing.md) {
-                    if let show {
-                        Kicker(text: "\(show.platform?.label ?? "SHOW") · 最近 7 天 \(show.episodesLast7Days) 集")
+                    if let first = episodes.first {
+                        Kicker(text: "\(first.platform.label) · \(first.showName)")
                     }
                     SectionHeader("最近集數")
                     if episodes.isEmpty {
@@ -82,23 +82,21 @@ struct ShowDetailView: View {
                     } else {
                         LazyVStack(spacing: 0) {
                             ForEach(episodes) { episode in
-                                NavigationLink(value: Route.episode(episode.id)) {
-                                    EpisodeCard(episode: episode, isRead: watchlist.isRead(episode.id))
+                                NavigationLink(value: Route.episode(episode.ref)) {
+                                    EpisodeCard(episode: episode, showsThisWeekBadge: episode.isWithinLast7Days, isRead: watchlist.isRead(episode.ref))
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
                     }
-                    SectionHeader("近 30 天提到的標的")
-                    ChartPlaceholder(title: "標的 · 上次提及 · 當時 / 最新收盤",
-                                     note: "此表將於串接 API 後提供。價格為還原收盤參考，非節目當下成交價。",
-                                     minHeight: 110)
+                    ShowTickersSection(showID: showID)
                     Disclaimer()
                 }
                 .weftScreen()
             }
         }
-        .navigationTitle(show?.name ?? "節目")
+        .navigationTitle(showName ?? "節目")
+        .task { showName = try? await repository.shows().first { $0.id == showID }?.name }
         .navigationBarTitleDisplayMode(.inline)
     }
 }

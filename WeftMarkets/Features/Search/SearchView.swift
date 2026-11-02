@@ -43,7 +43,7 @@ struct SearchView: View {
                         SectionHeader("相關重點")
                         VStack(spacing: 0) {
                             ForEach(found.notes, id: \.note.id) { item in
-                                NavigationLink(value: Route.episode(item.episode.id)) {
+                                NavigationLink(value: Route.episode(item.episode.ref)) {
                                     EpisodeCard(episode: item.episode, showsThisWeekBadge: false, note: item.note)
                                 }
                                 .buttonStyle(.plain)

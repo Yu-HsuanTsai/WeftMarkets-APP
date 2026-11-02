@@ -1,14 +1,18 @@
 import SwiftUI
 
-// Brand wordmark used in the 本週 masthead.
+// Brand wordmark (Assets: WeftLogo, template image so it takes the text color).
+// `size` keeps the old font-size scale: the logo is drawn about as tall as
+// that font's glyphs.
 struct WeftWordmark: View {
     var size: CGFloat = 26
 
     var body: some View {
-        Text("Weft")
-            .font(.system(size: size, weight: .black, design: .serif))
-            .tracking(-0.5 * size / 26)
+        Image(.weftLogo)
+            .resizable()
+            .scaledToFit()
+            .frame(height: size * 0.85)
             .foregroundStyle(WeftColor.textPrimary)
+            .accessibilityLabel("Weft")
             .accessibilityAddTraits(.isHeader)
     }
 }

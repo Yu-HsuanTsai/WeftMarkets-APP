@@ -205,7 +205,8 @@ enum MockData {
             ],
             notes12w: 354, episodes12w: 118, shows12w: 4,
             priceState: "趨勢中", narrativeTemperature: "溫熱", narrativeXPrice: "溫熱 × 趨勢中",
-            preMentionReturn: "+26.19%"
+            preMentionReturn: "+26.19%",
+            market: markets[1]
         ),
     ]
 }

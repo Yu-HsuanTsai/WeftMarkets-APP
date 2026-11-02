@@ -42,8 +42,8 @@ private struct EpisodeContent: View {
                         if let url = episode.sourceURL { openURL(url) }
                     }
                     .buttonStyle(.weftPrimary)
-                    Button(watchlist.isRead(episode.id) ? "已讀 ✓" : "標為已讀") {
-                        watchlist.toggleRead(episode.id)
+                    Button(watchlist.isRead(episode.ref) ? "已讀 ✓" : "標為已讀") {
+                        watchlist.toggleRead(episode.ref)
                     }
                     .buttonStyle(.weftSecondary)
                 }
@@ -109,6 +109,6 @@ private struct EpisodeContent: View {
 }
 
 #Preview {
-    NavigationStack { EpisodeDetailView(episodeID: MockData.episodes[0].id).weftDestinations() }
+    NavigationStack { EpisodeDetailView(episodeID: MockData.episodes[0].ref).weftDestinations() }
         .environment(WatchlistStore())
 }

@@ -3,8 +3,16 @@ import SwiftUI
 @main struct MyApp: App {
     @State private var watchlist = WatchlistStore()
     @State private var isLaunching = true
-    // Swap for the real API client once it is available.
-    private let repository: any WeftRepository = MockWeftRepository()
+    private let repository: any WeftRepository = Self.makeRepository()
+
+    /// Real data through weft-bff. DEBUG: `-useMockData YES` switches back to the
+    /// 2026-10-11 snapshot (offline UI work, screenshots).
+    private static func makeRepository() -> any WeftRepository {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "useMockData") { return MockWeftRepository() }
+        #endif
+        return APIWeftRepository(client: APIClient(baseURL: APIClient.configuredBaseURL))
+    }
 
     var body: some Scene {
         WindowGroup {

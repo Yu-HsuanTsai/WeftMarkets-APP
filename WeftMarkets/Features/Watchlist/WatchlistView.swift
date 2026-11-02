@@ -9,6 +9,8 @@ struct WatchlistView: View {
     @State private var isImporting = false
     @State private var confirmsClear = false
     @State private var importError: String?
+    /// Radar Top 15 by ticker, used for names and 7-day counts of tracked stocks when available.
+    @State private var rankings: [String: StockRanking] = [:]
 
     var body: some View {
         ScrollView {
@@ -23,8 +25,9 @@ struct WatchlistView: View {
                     SectionHeader("追蹤的個股")
                     VStack(spacing: 0) {
                         ForEach(watchlist.trackedTickers, id: \.self) { ticker in
-                            let ranking = MockData.radar.top.first { $0.stock.ticker == ticker }
-                                ?? StockRanking(rank: 0, stock: MockData.stock(ticker), noteCount: nil, episodeCount: 0, showCount: nil)
+                            let ranking = rankings[ticker]
+                                ?? StockRanking(rank: 0, stock: Stock(ticker: ticker, name: "", market: ticker.hasSuffix(".TW") ? .tw : .us, aliases: []),
+                                                noteCount: nil, episodeCount: 0, showCount: nil)
                             NavigationLink(value: Route.stock(ticker)) {
                                 StockRow(ranking: ranking, showsRank: false,
                                          metric: ranking.noteCount.map { "近 7 天 \($0) 則" } ?? "—",
@@ -44,9 +47,9 @@ struct WatchlistView: View {
                         } else {
                             VStack(spacing: 0) {
                                 ForEach(items, id: \.note.id) { item in
-                                    NavigationLink(value: Route.episode(item.episode.id)) {
+                                    NavigationLink(value: Route.episode(item.episode.ref)) {
                                         EpisodeCard(episode: item.episode, showsThisWeekBadge: false,
-                                                    isRead: watchlist.isRead(item.episode.id), note: item.note)
+                                                    isRead: watchlist.isRead(item.episode.ref), note: item.note)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -78,6 +81,10 @@ struct WatchlistView: View {
             .weftScreen()
         }
         .navigationTitle("追蹤")
+        .task {
+            guard let radar = try? await repository.radar() else { return }
+            rankings = Dictionary(radar.top.map { ($0.stock.ticker, $0) }, uniquingKeysWith: { first, _ in first })
+        }
         .fileExporter(isPresented: $isExporting,
                       document: WatchlistDocument(snapshot: watchlist.snapshot),
                       contentType: .json,

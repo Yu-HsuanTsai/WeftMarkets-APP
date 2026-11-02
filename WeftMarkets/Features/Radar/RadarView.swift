@@ -55,20 +55,38 @@ private struct StockRadarSection: View {
                         .buttonStyle(.plain)
                     }
                 }
-                Button("顯示全部 \(radar.totalRanked) 檔") { showsAll = true }
-                    .buttonStyle(.weftSecondary)
-                    .alert("範例資料只收錄前 \(radar.top.count) 名", isPresented: $showsAll) {
-                        Button("好") {}
-                    } message: {
-                        Text("完整 Top \(radar.totalRanked) 將於串接 API 後顯示。")
-                    }
+                if radar.top.count < radar.totalRanked {
+                    Button("顯示全部 \(radar.totalRanked) 檔") { showsAll = true }
+                        .buttonStyle(.weftSecondary)
+                        .alert("範例資料只收錄前 \(radar.top.count) 名", isPresented: $showsAll) {
+                            Button("好") {}
+                        } message: {
+                            Text("完整 Top \(radar.totalRanked) 將於串接 API 後顯示。")
+                        }
+                }
                 Text("依不重複 notes 數排序 · 同分依集數、節目數、最近提及。數字反映收錄內容的討論熱度，不是投資建議或買進排名。")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(WeftColor.textSecondary)
 
-                SectionHeader("近 12 週提及趨勢")
-                ChartPlaceholder(title: "Top \(radar.totalRanked) 每週提及次數",
-                                 note: "Swift Charts 折線圖（07/20 – 10/05）。點選圖例聚焦單一個股；按住拖曳看數值。資料由 API 提供。")
+                // Each chart loads on its own so the ranking above never waits for them.
+                SectionHeader("討論 × 價格")
+                Text("上一個完整週 · 整週收盤價齊了才算，所以不是近 7 天")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(WeftColor.textSecondary)
+                AsyncContent(load: { try await repository.heatPrice() }) { HeatPriceBoardView(board: $0) } placeholder: {
+                    SkeletonRow()
+                }
+
+                SectionHeader("近 12 週提及趨勢 · 累計 Top 5")
+                AsyncContent(load: { try await repository.mentionTrend() }) { trend in
+                    if trend.series.isEmpty {
+                        StateView(kind: .empty, title: "這段期間沒有提及資料")
+                    } else {
+                        MentionTrendChart(trend: trend)
+                    }
+                } placeholder: {
+                    SkeletonRow()
+                }
                 Disclaimer()
             }
         }

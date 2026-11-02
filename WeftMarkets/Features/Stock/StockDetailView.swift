@@ -56,8 +56,8 @@ private struct StockContent: View {
                 if let detail {
                     DetailSections(detail: detail, infoTopic: $infoTopic)
                 } else {
-                    StateView(kind: .empty, title: "這檔的提及紀錄尚未載入",
-                              message: "目前的範例資料只收錄 NVDA 的完整個股頁；其餘個股將於串接 API 後顯示。")
+                    StateView(kind: .empty, title: "這檔的提及紀錄暫時讀不到",
+                              message: "下拉可以重新整理。")
                 }
 
                 Disclaimer()
@@ -121,9 +121,14 @@ private struct DetailSections: View {
             StatTile(label: "集數", value: "\(detail.episodes12w)", unit: "集")
             StatTile(label: "節目", value: "\(detail.shows12w)", unit: "個")
         }
-        ChartPlaceholder(title: "節目提及 × 股價（近 12 週）",
-                         note: "Swift Charts：提及率（柱，左軸）× 收盤價（線，右軸）。按住拖曳看數值。資料由 API 提供，此處不放示意數字。",
-                         minHeight: 180)
+        // Hidden when show-weekly couldn't be read (no stand-in numbers).
+        if let weekly = detail.weeklyMentions {
+            SectionHeader("節目提及 × 股價")
+            WeeklyMentionsChart(data: weekly, ticker: detail.stock.ticker)
+            Text("提及率 = 這個節目當週提到 \(detail.stock.ticker) 的重點 ÷ 節目當週全部重點 × 100。兩條軸單位不同，線與柱的高低不能直接當成價格與討論的關係強弱。")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(WeftColor.textSecondary)
+        }
 
         SectionHeader("進階指標")
         VStack(spacing: 0) {
@@ -136,8 +141,12 @@ private struct DetailSections: View {
             .font(.caption.weight(.medium))
             .foregroundStyle(WeftColor.textSecondary)
 
-        if detail.stock.market == .us, let us = MockData.markets.first(where: { $0.market == "美股" }) {
-            MarketContextCard(context: us)
+        if let market = detail.market {
+            MarketContextCard(context: market)
+        }
+
+        if let firstPage = detail.firstNotesPage {
+            StockNotesSection(ticker: detail.stock.ticker, firstPage: firstPage, shows: detail.noteShows)
         }
     }
 
